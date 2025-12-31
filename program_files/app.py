@@ -5,13 +5,12 @@ import sys
 import threading
 
 from tkinter import scrolledtext
-
-from synchronizer import copy_band_projects, folder_synch
-
+from tkinter.messagebox import askyesno
 from tkinter import filedialog
-
 from tkinter import ttk
 from tkinter import simpledialog
+
+from synchronizer import copy_band_projects, folder_synch
 
 from settings_manager import load_settings, save_settings
 

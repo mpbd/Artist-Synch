@@ -10,9 +10,15 @@ import paramiko
 import json
 import subprocess
 
+gui_prompt = None   # function that asks for user input (set by app)
+gui_wait_input = None  # function that blocks worker until input arrives
 
-########################################
-
+def ask_user(question, choices):
+    if gui_prompt is None or gui_wait_input is None:
+        raise RuntimeError("GUI callbacks not configured")
+    
+    gui_prompt(question, choices)  # tell GUI to show prompt
+    return gui_wait_input()        # wait for GUI response
 
 def is_samba_share_mounted(Drive):
 	share_path = Drive.path
@@ -39,8 +45,7 @@ def find_external_drive(Drive):
 					break
 	except Exception as e:
 		print(f"An error occurred: {e}")
-	
-########################################
+
 
 
 #	Upload para servidor via SSH
@@ -250,7 +255,8 @@ def delete_duplicates(list_of_duplicates):
 			print(f"\n\t\tGoing to synch:\n\t\t\t1. \"" + key + "\n\t\t\t2. \"" + list_of_duplicates[key])
 
 		print("\n\t% Backup e apagar?\n\t%\t1. Sim\n\t%\t2. Não")
-		copy_option = input("\t% -> ")
+		#copy_option = input("\t% -> ")
+		copy_option = ask_user("Backup e apagar?", [("Sim",1),("Não",2)])
 		if copy_option != '2':
 			for key in list_of_duplicates:
 				if list_of_duplicates[key] in key and list_of_duplicates[key] != key:
@@ -287,16 +293,71 @@ def delete_duplicates(list_of_duplicates):
 	else:
 		print("\n\t##### Não há duplicados :D")
 
+# def delete_duplicates(list_of_duplicates):
+
+#     print("\n\tListing duplicates")
+
+#     if not list_of_duplicates:
+#         print("\n\t##### Não há duplicados :D")
+#         return
+
+#     for key in list_of_duplicates:
+#         print(f"\n\t\tGoing to synch:\n\t\t\t1. \"{key}\"\n\t\t\t2. \"{list_of_duplicates[key]}\"")
+
+#     # Ask GUI whether to backup & delete
+#     copy_option = get_gui_choice(
+#         "Backup e apagar?",
+#         [("1. Sim", "1"), ("2. Não", "2")]
+#     )
+
+#     if copy_option != "2":
+#         for key in list_of_duplicates:
+
+#             # Key is folder and value is its duplicate
+#             if list_of_duplicates[key] in key and list_of_duplicates[key] != key:
+
+#                 print("\n\tCopying more recent folder into main folder...")
+
+#                 folder_synch(key, list_of_duplicates[key], "/xo /s")
+#                 command = f'rmdir /s /q "{key}"'
+#                 os.system(command)
+
+#     else:
+#         # Ask which folder to delete for each duplicate
+#         for key in list_of_duplicates:
+
+#             delete_option = get_gui_choice(
+#                 f"Going to synch:\n1. \"{key}\"\n2. \"{list_of_duplicates[key]}\"\n3. Nenhum\nWhich one to delete?",
+#                 [
+#                     (f"1. {key}", "1"),
+#                     (f"2. {list_of_duplicates[key]}", "2"),
+#                     ("3. Nenhum", "3")
+#                 ]
+#             )
+
+#             if delete_option == "1":
+#                 folder_synch(key, list_of_duplicates[key], "/xo /s")
+#                 os.system(f'rmdir /s /q "{key}"')
+
+#             elif delete_option == "2":
+#                 folder_synch(list_of_duplicates[key], key, "/xo /s")
+#                 os.system(f'rmdir /s /q "{list_of_duplicates[key]}"')
+
+#             else:
+#                 print("\n\tNenhum selecionado. Mantendo ambos.")
+
+#     print("\n\t##### Tê já então ####")
+
 ########################################
-def tag_synch_music(banda,option_list):
-	src = local_full_repo + banda + "\\2. Músicas\\ "
+# def tag_synch_music(banda,option_list):
+# 	src = local_full_repo + banda + "\\2. Músicas\\ "
 
-	#	Tag das músicas no PC - retirar espaço no fim do path
-	tag_song_folder(src.rstrip(), banda)
+# 	#	Tag das músicas no PC - retirar espaço no fim do path
+# 	tag_song_folder(src.rstrip(), banda)
 
-	for drive_index in option_list:
-		dst = f"{list_of_drives[drive_index].path}" + "\\" + banda + "\\2. Músicas\\ "
-		folder_synch(src, dst, " /xo /s")
+# 	for drive_index in option_list:
+# 		dst = f"{list_of_drives[drive_index].path}" + "\\" + banda + "\\2. Músicas\\ "
+# 		folder_synch(src, dst, " /xo /s")
 
 # 	========================================================================
 #	Ver quais são os projetos que já existem na origin e destination.
@@ -314,8 +375,8 @@ def copy_band_projects(origin,destination):
 	list_projects(origin,list_of_local_projects,list_of_duplicates)
 	
 	#	Se existirem duplicados locais fazer deduplicação
-	if list_of_duplicates:
-		delete_duplicates(list_of_duplicates)
+	#if list_of_duplicates:
+	#	delete_duplicates(list_of_duplicates)
 
 	#	========================================================================================
 	#	Listar projetos no destino 
@@ -328,8 +389,8 @@ def copy_band_projects(origin,destination):
 	list_projects(destination,list_of_remote_projects,list_of_duplicates)
 
 	#	Se existirem duplicados locais fazer deduplicação
-	if list_of_duplicates:
-		delete_duplicates(list_of_duplicates)
+	#if list_of_duplicates:
+	#	delete_duplicates(list_of_duplicates)
 	print("\n\t##### Starting copy/synch ... ")
 
 	#	========================================================================================

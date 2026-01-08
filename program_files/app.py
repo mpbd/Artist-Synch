@@ -3,14 +3,19 @@ import psutil
 import tkinter as tk
 import sys
 import threading
+import queue
+import synchronizer
 
+from tkinter.messagebox import askyesno
+from tkinter.simpledialog import askstring
+from tkinter.simpledialog import Dialog
 from tkinter import scrolledtext
 from tkinter.messagebox import askyesno
 from tkinter import filedialog
 from tkinter import ttk
 from tkinter import simpledialog
 
-from synchronizer import copy_band_projects, folder_synch
+from synchronizer import folder_synch, copy_band_projects
 
 from settings_manager import load_settings, save_settings
 
@@ -34,6 +39,8 @@ class ConsoleRedirector:
     def flush(self):
         pass
 
+
+
 chosen_band = None
 current_band_label = None
 
@@ -48,6 +55,16 @@ selected_operation = None
 selected_structure = []
 
 settings = load_settings()
+
+user_prompt_queue = queue.Queue()
+user_response_queue = queue.Queue()
+
+def gui_prompt(question, choices):
+    user_prompt_queue.put((question, choices))
+
+def gui_wait_input():
+    return user_response_queue.get()   # blocks worker thread without freezing GUI
+
 
 def list_mounted_drives():
     drives = []
@@ -345,7 +362,7 @@ menubar.add_cascade(label="CONFIG", menu=config_menu)
 root.config(menu=menubar)
 
 # ============================
-#  RESIZABLE PANED LAYOUT
+#  Resizable paned layout
 # ============================
 
 # Outer split (top vs bottom)
@@ -391,9 +408,40 @@ C_panel = make_scrollable(C_frame)
 D_panel = make_scrollable(D_frame)
 E_panel = make_scrollable(E_frame)
 
-# ============================
-#  FILL PANEL FUNCTIONS
-# ============================
+
+
+# ====================================
+#  Panel fill and support functions
+# ====================================
+def on_band_click(band, widget):
+    global chosen_band, current_band_label, current_origin_label, current_destination_label
+
+    chosen_band = band
+
+    # Remove old highlight safely
+    if current_band_label is not None:
+        if current_band_label.winfo_exists():
+            current_band_label.config(bg=A_panel.cget("bg"))
+        current_band_label = None
+
+    if current_origin_label is not None:
+        if current_origin_label.winfo_exists():
+            current_origin_label.config(bg=A_panel.cget("bg"))
+        current_origin_label = None
+
+    if current_destination_label is not None:
+        if current_destination_label.winfo_exists():
+            current_destination_label.config(bg=A_panel.cget("bg"))
+        current_destination_label = None
+
+    # Highlight new selected one
+    widget.config(bg="#add8e6")
+    current_band_label = widget
+
+    # Update UI
+    fill_structure_panel()
+    fill_origin_panel()
+    fill_destination_panel()
 
 def fill_bands_panel():
     for w in A_panel.winfo_children():
@@ -411,6 +459,35 @@ def fill_bands_panel():
 
         # Double click = open band editor immediately
         lbl.bind("<Double-Button-1>", lambda e, b=band, w=lbl: (on_band_click(b, w), open_band_editor(b, False)))
+
+def select_origin(x):
+    global origin
+
+    # If the user clicked the currently selected origin → unselect it
+    if origin == x:
+        origin = None
+    else:
+        origin = x
+
+    fill_origin_panel()
+    fill_destination_panel()
+
+def add_origin_label(loc):
+    global origin, destination
+
+    # Disabled if equal to destination
+    if loc == destination:
+        lbl = tk.Label(B_panel, text=loc, anchor="w", fg="gray")
+        lbl.pack(fill="x")
+        return
+
+    # Highlight if this is the chosen origin
+    bg_color = "#add8e6" if loc == origin else B_panel.cget("bg")
+
+    lbl = tk.Label(B_panel, text=loc, anchor="w", bg=bg_color)
+    lbl.pack(fill="x")
+
+    lbl.bind("<Button-1>", lambda e, x=loc: select_origin(x))
 
 def fill_origin_panel():
     global origin, destination
@@ -431,6 +508,35 @@ def fill_origin_panel():
     # SECONDARY LOCATIONS
     for loc in chosen_band.get("secondary_locations", []):
         add_origin_label(loc)
+        
+def select_destination(x):
+    global destination
+
+    # If user clicked the already selected destination → unselect it
+    if destination == x:
+        destination = None
+    else:
+        destination = x
+
+    fill_origin_panel()
+    fill_destination_panel()
+
+def add_destination_label(loc):
+    global origin, destination
+
+    # Disabled if equal to origin
+    if loc == origin:
+        lbl = tk.Label(C_panel, text=loc, anchor="w", fg="gray")
+        lbl.pack(fill="x")
+        return
+
+    # Highlight if this is the chosen destination
+    bg_color = "#add8e6" if loc == destination else C_panel.cget("bg")
+
+    lbl = tk.Label(C_panel, text=loc, anchor="w", bg=bg_color)
+    lbl.pack(fill="x")
+
+    lbl.bind("<Button-1>", lambda e, x=loc: select_destination(x))
 
 def fill_destination_panel():
     global origin, destination
@@ -452,63 +558,6 @@ def fill_destination_panel():
     for loc in chosen_band.get("secondary_locations", []):
         add_destination_label(loc)
 
-def add_origin_label(loc):
-    global origin, destination
-
-    # Disabled if equal to destination
-    if loc == destination:
-        lbl = tk.Label(B_panel, text=loc, anchor="w", fg="gray")
-        lbl.pack(fill="x")
-        return
-
-    # Highlight if this is the chosen origin
-    bg_color = "#add8e6" if loc == origin else B_panel.cget("bg")
-
-    lbl = tk.Label(B_panel, text=loc, anchor="w", bg=bg_color)
-    lbl.pack(fill="x")
-
-    lbl.bind("<Button-1>", lambda e, x=loc: select_origin(x))
-
-def add_destination_label(loc):
-    global origin, destination
-
-    # Disabled if equal to origin
-    if loc == origin:
-        lbl = tk.Label(C_panel, text=loc, anchor="w", fg="gray")
-        lbl.pack(fill="x")
-        return
-
-    # Highlight if this is the chosen destination
-    bg_color = "#add8e6" if loc == destination else C_panel.cget("bg")
-
-    lbl = tk.Label(C_panel, text=loc, anchor="w", bg=bg_color)
-    lbl.pack(fill="x")
-
-    lbl.bind("<Button-1>", lambda e, x=loc: select_destination(x))
-
-def select_origin(x):
-    global origin
-
-    # If the user clicked the currently selected origin → unselect it
-    if origin == x:
-        origin = None
-    else:
-        origin = x
-
-    fill_origin_panel()
-    fill_destination_panel()
-
-def select_destination(x):
-    global destination
-
-    # If user clicked the already selected destination → unselect it
-    if destination == x:
-        destination = None
-    else:
-        destination = x
-
-    fill_origin_panel()
-    fill_destination_panel()
 
 def fill_operations_panel():
     global selected_operation
@@ -549,19 +598,19 @@ def fill_operations_panel():
         lbl.pack(fill="x")
 
         # proper frozen variables for hover
-        lbl.bind("<Enter>", lambda e, l=lbl, o=op: on_op_hover_enter(l, o))
-        lbl.bind("<Leave>", lambda e, l=lbl, o=op: on_op_hover_leave(l, o))
+        lbl.bind("<Enter>", lambda e, l=lbl, o=op: on_operation_hover_enter(l, o))
+        lbl.bind("<Leave>", lambda e, l=lbl, o=op: on_operation_hover_leave(l, o))
 
         # proper click binding
         lbl.bind("<Button-1>", lambda e, o=op: on_operation_click(o))
 
-def on_op_hover_enter(label, op):
+def on_operation_hover_enter(label, op):
     global selected_operation
     if op != selected_operation:
         label.config(bg="#e0e0e0")
 
 
-def on_op_hover_leave(label, op):
+def on_operation_hover_leave(label, op):
     global selected_operation
     bg_normal = D_panel.cget("bg")
     bg_selected = "#add8e6"
@@ -578,6 +627,26 @@ def on_operation_click(op):
 
     fill_operations_panel()   # refresh with correct highlight 
 
+def add_structure_item(parent, item):
+    global selected_structure
+
+    name = item.get("name", "")
+    is_project = item.get("is_project_folder", False)
+
+    bg_normal = parent.cget("bg")
+    bg_selected = "#add8e6"
+
+    initial_bg = bg_selected if item in selected_structure else bg_normal
+
+    lbl = tk.Label(parent, text=name, anchor="w", padx=10, bg=initial_bg)
+    lbl.pack(fill="x")
+
+    lbl.bind("<Enter>", lambda e, l=lbl: on_structure_hover_enter(l))
+    lbl.bind("<Leave>", lambda e, l=lbl, i=item, n=bg_normal, s=bg_selected:
+             on_structure_hover_leave(l, i, n, s))
+
+    lbl.bind("<Button-1>", lambda e, i=item, l=lbl, n=bg_normal, s=bg_selected:
+             on_structure_click(i, l, n, s))
 def fill_structure_panel():
     global selected_structure
 
@@ -607,27 +676,6 @@ def fill_structure_panel():
     for item in structure:
        add_structure_item(E_panel, item)
 
-def add_structure_item(parent, item):
-    global selected_structure
-
-    name = item.get("name", "")
-    is_project = item.get("is_project_folder", False)
-
-    bg_normal = parent.cget("bg")
-    bg_selected = "#add8e6"
-
-    initial_bg = bg_selected if item in selected_structure else bg_normal
-
-    lbl = tk.Label(parent, text=name, anchor="w", padx=10, bg=initial_bg)
-    lbl.pack(fill="x")
-
-    lbl.bind("<Enter>", lambda e, l=lbl: on_structure_hover_enter(l))
-    lbl.bind("<Leave>", lambda e, l=lbl, i=item, n=bg_normal, s=bg_selected:
-             on_structure_hover_leave(l, i, n, s))
-
-    lbl.bind("<Button-1>", lambda e, i=item, l=lbl, n=bg_normal, s=bg_selected:
-             on_structure_click(i, l, n, s))
-
 def on_structure_click(item, label_widget, bg_normal, bg_selected):
     global selected_structure
 
@@ -648,37 +696,14 @@ def on_structure_hover_leave(label_widget, item_name, bg_normal, bg_selected):
         label_widget.config(bg=bg_selected)
     else:
         label_widget.config(bg=bg_normal)
+# ====================================
+#  End of panel fill and support functions
+# ====================================
 
-def on_band_click(band, widget):
-    global chosen_band, current_band_label, current_origin_label, current_destination_label
-
-    chosen_band = band
-
-    # Remove old highlight safely
-    if current_band_label is not None:
-        if current_band_label.winfo_exists():
-            current_band_label.config(bg=A_panel.cget("bg"))
-        current_band_label = None
-
-    if current_origin_label is not None:
-        if current_origin_label.winfo_exists():
-            current_origin_label.config(bg=A_panel.cget("bg"))
-        current_origin_label = None
-
-    if current_destination_label is not None:
-        if current_destination_label.winfo_exists():
-            current_destination_label.config(bg=A_panel.cget("bg"))
-        current_destination_label = None
-
-    # Highlight new selected one
-    widget.config(bg="#add8e6")
-    current_band_label = widget
-
-    # Update UI
-    fill_structure_panel()
-    fill_origin_panel()
-    fill_destination_panel()
-
+gui_prompt = None
+gui_wait_input = None
+synchronizer.gui_prompt = gui_prompt
+synchronizer.gui_wait_input = gui_wait_input
 
 # ============================
 #  INITIAL DRAW

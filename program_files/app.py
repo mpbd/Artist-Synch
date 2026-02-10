@@ -198,7 +198,7 @@ def open_band_editor(band, is_new):
                 "path": path
             }
 
-            main_loc_var.set(path)
+            main_loc_var.set(band["main_location"])
 
     tk.Button(win, text="Browse...", command=browse_main_location).pack(pady=2)
 

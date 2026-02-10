@@ -5,6 +5,9 @@ import sys
 import threading
 import queue
 import synchronizer
+import os
+import ctypes
+import uuid
 
 from tkinter.messagebox import askyesno
 from tkinter.simpledialog import askstring
@@ -72,7 +75,35 @@ def list_mounted_drives():
         drives.append(part.device)  
     return drives
 
-#bands = settings["bands"]
+def get_drive_info(path):
+    # Extract drive root like "D:\\"
+    drive = os.path.splitdrive(path)[0] + "\\"
+
+    # --- Drive Label ---
+    volume_name_buffer = ctypes.create_unicode_buffer(1024)
+    fs_name_buffer = ctypes.create_unicode_buffer(1024)
+    serial_number = ctypes.c_ulong()
+
+    ctypes.windll.kernel32.GetVolumeInformationW(
+        ctypes.c_wchar_p(drive),
+        volume_name_buffer,
+        ctypes.sizeof(volume_name_buffer),
+        ctypes.byref(serial_number),
+        None,
+        None,
+        fs_name_buffer,
+        ctypes.sizeof(fs_name_buffer)
+    )
+
+    label = volume_name_buffer.value
+    uuid_hex = hex(serial_number.value)[2:].upper()
+
+    return {
+        "drive_root": drive,
+        "uuid": uuid_hex,
+        "label": label
+    }
+
 drives = list_mounted_drives()
 #options = settings["options"]
 operations = ["Copy", "Sync Drives"]
@@ -159,6 +190,14 @@ def open_band_editor(band, is_new):
     def browse_main_location():
         path = filedialog.askdirectory()
         if path:
+            info = get_drive_info(path)
+
+            band["main_location"] = {
+                "id": f"{info['uuid']}",
+                "label": info["label"] or "unknown",
+                "path": path
+            }
+
             main_loc_var.set(path)
 
     tk.Button(win, text="Browse...", command=browse_main_location).pack(pady=2)
@@ -174,12 +213,25 @@ def open_band_editor(band, is_new):
         band["secondary_locations"] = []
 
     for loc in band["secondary_locations"]:
-        sec_listbox.insert(tk.END, loc)
+        #print(loc)
+        sec_listbox.insert(tk.END, f"{loc['label']}  ({loc['path']})")
 
     def add_secondary():
         path = filedialog.askdirectory()
         if path:
-            sec_listbox.insert(tk.END, path)
+            info = get_drive_info(path)
+
+            new_loc = {
+                "id": f"{info['uuid']}",
+                "label": info["label"] or "unknown",
+                "path": path
+            }
+            print(new_loc)
+
+            band["secondary_locations"].append(new_loc)
+
+            # Show pretty label instead of full JSON
+            sec_listbox.insert(tk.END, f"{new_loc['label']}  ({new_loc['path']})")
 
     def remove_secondary():
         sel = sec_listbox.curselection()
@@ -253,7 +305,7 @@ def open_band_editor(band, is_new):
             }
             for f in folder_widgets
         ]
-        band["secondary_locations"] = list(sec_listbox.get(0, tk.END))
+        #band["secondary_locations"] = list(sec_listbox.get(0, tk.END))
 
         if is_new:
             settings["bands"].append(band)

@@ -197,7 +197,7 @@ def open_band_editor(band, is_new):
                 "label": info["label"] or "unknown",
                 "path": path
             }
-
+            print(band["main_location"])
             main_loc_var.set(band["main_location"])
 
     tk.Button(win, text="Browse...", command=browse_main_location).pack(pady=2)
@@ -512,6 +512,15 @@ def fill_bands_panel():
         # Double click = open band editor immediately
         lbl.bind("<Double-Button-1>", lambda e, b=band, w=lbl: (on_band_click(b, w), open_band_editor(b, False)))
 
+
+def format_location(loc):
+    if not isinstance(loc, dict):
+        return str(loc)
+
+    label = loc.get("label", "unknown")
+    path = loc.get("path", "")
+    return f"{label} -> {path}"
+
 def select_origin(x):
     global origin
 
@@ -520,7 +529,7 @@ def select_origin(x):
         origin = None
     else:
         origin = x
-
+    print("Selected origin: ", origin)
     fill_origin_panel()
     fill_destination_panel()
 
@@ -529,14 +538,14 @@ def add_origin_label(loc):
 
     # Disabled if equal to destination
     if loc == destination:
-        lbl = tk.Label(B_panel, text=loc, anchor="w", fg="gray")
+        lbl = tk.Label(B_panel, text=format_location(loc), anchor="w", fg="gray")
         lbl.pack(fill="x")
         return
 
     # Highlight if this is the chosen origin
     bg_color = "#add8e6" if loc == origin else B_panel.cget("bg")
 
-    lbl = tk.Label(B_panel, text=loc, anchor="w", bg=bg_color)
+    lbl = tk.Label(B_panel, text=format_location(loc), anchor="w", bg=bg_color)
     lbl.pack(fill="x")
 
     lbl.bind("<Button-1>", lambda e, x=loc: select_origin(x))
@@ -578,14 +587,14 @@ def add_destination_label(loc):
 
     # Disabled if equal to origin
     if loc == origin:
-        lbl = tk.Label(C_panel, text=loc, anchor="w", fg="gray")
+        lbl = tk.Label(C_panel, text=format_location(loc), anchor="w", fg="gray")
         lbl.pack(fill="x")
         return
 
     # Highlight if this is the chosen destination
     bg_color = "#add8e6" if loc == destination else C_panel.cget("bg")
 
-    lbl = tk.Label(C_panel, text=loc, anchor="w", bg=bg_color)
+    lbl = tk.Label(C_panel, text=format_location(loc), anchor="w", bg=bg_color)
     lbl.pack(fill="x")
 
     lbl.bind("<Button-1>", lambda e, x=loc: select_destination(x))

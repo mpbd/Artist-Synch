@@ -182,9 +182,16 @@ def open_band_editor(band, is_new):
     # --- MAIN LOCATION ---
     tk.Label(win, text="Main Location:").pack()
 
-    main_loc_var = tk.StringVar(value=band.get("main_location", ""))
+    main_value = band.get("main_location", "")
 
-    main_entry = tk.Entry(win, textvariable=main_loc_var, width=40)
+    if isinstance(main_value, dict):
+        # Display only the path of the main location
+        main_loc_path_var = tk.StringVar(value=main_value.get("path", ""))
+    else:
+        # If it's already a string or empty, show it as-is
+        main_loc_path_var = tk.StringVar(value=main_value)
+
+    main_entry = tk.Entry(win, textvariable=main_loc_path_var, width=40)
     main_entry.pack(pady=5)
 
     def browse_main_location():
@@ -197,8 +204,8 @@ def open_band_editor(band, is_new):
                 "label": info["label"] or "unknown",
                 "path": path
             }
-            print(band["main_location"])
-            main_loc_var.set(band["main_location"])
+           
+            main_loc_path_var.set(band["main_location"]["path"])
 
     tk.Button(win, text="Browse...", command=browse_main_location).pack(pady=2)
 
@@ -297,7 +304,12 @@ def open_band_editor(band, is_new):
     # --- SAVE BUTTON ---
     def save_band():
         band["name"] = name_var.get().strip()
-        band["main_location"] = main_loc_var.get()
+
+
+        if isinstance(band.get("main_location"), dict):
+            band["main_location"]["path"] = main_loc_path_var.get()
+
+
         band["structure"] = [
             {
                 "name": f["name_var"].get(),

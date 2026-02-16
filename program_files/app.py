@@ -71,9 +71,22 @@ def gui_wait_input():
 
 def list_mounted_drives():
     drives = []
-    for part in psutil.disk_partitions(all=False):
+    for part in psutil.disk_partitions(all=True):
         drives.append(part.device)  
     return drives
+
+def location_is_mounted(loc, mounted_drives):
+    if not isinstance(loc, dict):
+        return False
+
+    path = loc.get("path", "")
+    if not path:
+        return False
+
+    # Extract drive root from "D:/URSE" or "D:\URSE"
+    drive_root = os.path.splitdrive(path)[0] + "\\"
+
+    return drive_root in mounted_drives
 
 def get_drive_info(path):
     # Extract drive root like "D:\\"
@@ -105,6 +118,18 @@ def get_drive_info(path):
     }
 
 drives = list_mounted_drives()
+
+full_drive_info = {}
+
+for d in drives:
+    try:
+        info = get_drive_info(d)   # returns { "drive_root", "uuid", "label" }
+        full_drive_info[info["uuid"]] = info
+    except Exception as e:
+        print("Could not get drive info for", d, e)
+
+print("Mounted drives:", drives)
+print("Full drive info:", full_drive_info)
 #options = settings["options"]
 operations = ["Copy", "Sync Drives"]
 
@@ -574,13 +599,17 @@ def fill_origin_panel():
         tk.Label(B_panel, text="(select a band)", fg="gray").pack(anchor="w")
         return
 
+    mounted = list_mounted_drives()
+
     # MAIN LOCATION
     main_loc = chosen_band["main_location"]
-    add_origin_label(main_loc)
+    if location_is_mounted(main_loc, mounted):
+        add_origin_label(main_loc)
     
     # SECONDARY LOCATIONS
     for loc in chosen_band.get("secondary_locations", []):
-        add_origin_label(loc)
+        if location_is_mounted(loc, mounted):
+            add_origin_label(loc)
         
 def select_destination(x):
     global destination

@@ -75,18 +75,41 @@ def list_mounted_drives():
         drives.append(part.device)  
     return drives
 
-def location_is_mounted(loc, mounted_drives):
+def location_is_mounted(loc):
     if not isinstance(loc, dict):
         return False
 
-    path = loc.get("path", "")
-    if not path:
+    loc_id = loc.get("id")
+    loc_label = loc.get("label")
+    loc_path = loc.get("path")
+
+    if not loc_id or not loc_label or not loc_path:
         return False
 
-    # Extract drive root from "D:/URSE" or "D:\URSE"
-    drive_root = os.path.splitdrive(path)[0] + "\\"
+    # Normalize stored path → extract drive root ("D:\\")
+    loc_drive_root = os.path.splitdrive(loc_path)[0] + "\\"
+    
+    for m in mounted_drives:
+        if not isinstance(m, dict):
+            continue
+            
+        m_id = m.get("id")
+        m_label = m.get("label")
+        m_root  = m.get("path")
 
-    return drive_root in mounted_drives
+        # Normalize mounted path too
+        if m_root:
+            m_root = os.path.splitdrive(m_root)[0] + "\\"
+
+        # Strict match of: id, label, and drive root
+        if (
+            m_id == loc_id and
+            m_label == loc_label and
+            m_root == loc_drive_root
+        ):
+            return True
+
+    return False
 
 def get_drive_info(path):
     # Extract drive root like "D:\\"
@@ -112,24 +135,23 @@ def get_drive_info(path):
     uuid_hex = hex(serial_number.value)[2:].upper()
 
     return {
-        "drive_root": drive,
-        "uuid": uuid_hex,
-        "label": label
+        "id": uuid_hex,
+        "label": label or "unknown",
+        "path": drive
     }
 
-drives = list_mounted_drives()
+drives_root = list_mounted_drives()
 
-full_drive_info = {}
+mounted_drives = []
 
-for d in drives:
+for d in drives_root:
     try:
-        info = get_drive_info(d)   # returns { "drive_root", "uuid", "label" }
-        full_drive_info[info["uuid"]] = info
+        info = get_drive_info(d)   # returns {"uuid","drive_root","label" }
+        mounted_drives.append(info)
     except Exception as e:
         print("Could not get drive info for", d, e)
 
-print("Mounted drives:", drives)
-print("Full drive info:", full_drive_info)
+print("Mounted drives:", mounted_drives)
 #options = settings["options"]
 operations = ["Copy", "Sync Drives"]
 
@@ -225,7 +247,7 @@ def open_band_editor(band, is_new):
             info = get_drive_info(path)
 
             band["main_location"] = {
-                "id": f"{info['uuid']}",
+                "id": f"{info['id']}",
                 "label": info["label"] or "unknown",
                 "path": path
             }
@@ -254,7 +276,7 @@ def open_band_editor(band, is_new):
             info = get_drive_info(path)
 
             new_loc = {
-                "id": f"{info['uuid']}",
+                "id": f"{info['id']}",
                 "label": info["label"] or "unknown",
                 "path": path
             }
@@ -599,16 +621,16 @@ def fill_origin_panel():
         tk.Label(B_panel, text="(select a band)", fg="gray").pack(anchor="w")
         return
 
-    mounted = list_mounted_drives()
-
     # MAIN LOCATION
     main_loc = chosen_band["main_location"]
-    if location_is_mounted(main_loc, mounted):
+    #print("Mounted drives again:", mounted_drives)
+    #print("Checking main location:", main_loc)
+    if location_is_mounted(main_loc):
         add_origin_label(main_loc)
     
     # SECONDARY LOCATIONS
     for loc in chosen_band.get("secondary_locations", []):
-        if location_is_mounted(loc, mounted):
+        if location_is_mounted(loc):
             add_origin_label(loc)
         
 def select_destination(x):

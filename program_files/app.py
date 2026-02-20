@@ -43,7 +43,6 @@ class ConsoleRedirector:
         pass
 
 
-
 chosen_band = None
 current_band_label = None
 
@@ -588,7 +587,7 @@ def select_origin(x):
         origin = None
     else:
         origin = x
-    print("Selected origin: ", origin)
+   
     fill_origin_panel()
     fill_destination_panel()
 
@@ -676,12 +675,13 @@ def fill_destination_panel():
 
     # MAIN LOCATION
     main_loc = chosen_band["main_location"]
-    add_destination_label(main_loc)
+    if location_is_mounted(main_loc):
+        add_destination_label(main_loc)
 
     # SECONDARY LOCATIONS
     for loc in chosen_band.get("secondary_locations", []):
-        add_destination_label(loc)
-
+        if location_is_mounted(loc):
+            add_destination_label(loc)
 
 def fill_operations_panel():
     global selected_operation

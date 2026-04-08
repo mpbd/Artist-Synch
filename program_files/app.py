@@ -18,7 +18,7 @@ from tkinter import filedialog
 from tkinter import ttk
 from tkinter import simpledialog
 
-from synchronizer import folder_synch, copy_band_projects
+from synchronizer import folder_synch, copy_band_projects, tag_song_folder
 
 from settings_manager import load_settings, save_settings
 
@@ -152,7 +152,7 @@ for d in drives_root:
 
 print("Mounted drives:", mounted_drives)
 #options = settings["options"]
-operations = ["Copy", "Sync Drives"]
+operations = ["Tag songs", "Sync Folders", "Sync Drives"]
 
 root = tk.Tk()
 root.title("Syncher")
@@ -396,8 +396,8 @@ def go_operation():
     global origin, destination, selected_operation, selected_structure
 
     # --- BASE VALIDATION ---
-    if origin is None or destination is None:
-        print("Origin or destination not selected!")
+    if origin is None:
+        print("Origin not selected!")
         return
 
     if selected_operation is None:
@@ -405,7 +405,7 @@ def go_operation():
         return
 
     if not selected_structure:
-        print("No structure selected!")
+        print("No folder selected!")
         return
 
     # --- CLEAN WINDOWS PATH FIX ---
@@ -414,19 +414,17 @@ def go_operation():
             return p
         return p.replace("/", "\\").rstrip("\\")   # no trailing slash
 
-    safe_origin = winpath(origin)
-    safe_destination = winpath(destination)
-    safe_structure = [winpath(f) for f in selected_structure]
-
+    safe_origin = winpath(origin["path"])
+    safe_destination = winpath(destination["path"])
+    #safe_structure = [winpath(f["name"]) for f in selected_structure]
+    print("Safe paths and operation:", safe_origin, safe_destination, selected_structure, selected_operation)
     # TEMP: you were forcing this operation, so I keep it here
-    selected_operation = "/xo /s /R:10 /W:10 /NJH /NJS /TEE"
-
-    print("Selected:", safe_origin, safe_destination, safe_structure)
+    
 
     # --- RUN EVERYTHING IN A BACKGROUND THREAD ---
     threading.Thread(
         target=run_sync_worker,
-        args=(safe_origin, safe_destination, safe_structure, selected_operation),
+        args=(safe_origin, safe_destination, selected_structure, selected_operation),
         daemon=True
     ).start()
 
@@ -434,22 +432,33 @@ def go_operation():
 
 def run_sync_worker(safe_origin, safe_destination, safe_structure, selected_operation):
 
-    print("Starting synchronization...")
+    print("Performing operation in background thread with:", safe_origin, safe_destination, safe_structure, selected_operation)
 
-    for folder in safe_structure:
+    if selected_operation == "Tag songs":
+        
+        for folder in safe_structure:
+            src = os.path.join(safe_origin, folder["name"])
+            dst = os.path.join(safe_destination, folder["name"])
+            artist = chosen_band["name"]
 
-        print(f"Copying folder: {folder['name']}")
+            print(f"Tagging folder: \"{src}\" with artist \"{artist}\"")
+            synchronizer.tag_song_folder(src,artist)
+    elif selected_operation == "Sync Folders":
+        robocopy_operation = "/xo /s /R:10 /W:10 /TEE"
+        
+        print(f"Syncing folders from {safe_origin} to {safe_destination} with structure {safe_structure} and options {selected_operation}")
+        for folder in safe_structure:
 
-        src = safe_origin + "\\" + folder["name"]
-        dst = safe_destination + "\\" + folder["name"]
-
-        # Project folder: use copy_band_projects
-        if folder["is_project_folder"]:
-            print(f"Project folder detected: {src}")
-            copy_band_projects(src, dst)              # NO thread here
-        else:
-            print(f"Folder Synch: {src} -> {dst} with {selected_operation}")
-            folder_synch(src, dst, selected_operation) # NO thread here
+            src = safe_origin + "\\" + folder["name"]
+            dst = safe_destination + "\\" + folder["name"]
+            print(folder)
+            # Project folder: use copy_band_projects
+            if folder["is_project_folder"]:
+                print(f"Project folder detected: {src}")
+                #copy_band_projects(src, dst)              # NO thread here
+            else:
+                print(f"Folder Synch: {src} -> {dst} with {robocopy_operation}")
+                folder_synch(src, dst, robocopy_operation) # NO thread here
 
     print("Operation completed.")
 

@@ -359,6 +359,9 @@ def delete_duplicates(list_of_duplicates):
 # 		dst = f"{list_of_drives[drive_index].path}" + "\\" + banda + "\\2. Músicas\\ "
 # 		folder_synch(src, dst, " /xo /s")
 
+
+
+
 # 	========================================================================
 #	Ver quais são os projetos que já existem na origin e destination.
 #	Fazer cópia incremental caso o projeto exista em ambos os lados

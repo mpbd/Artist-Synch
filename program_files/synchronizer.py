@@ -19,16 +19,6 @@ def ask_user(question, choices):
     
     gui_prompt(question, choices)  # tell GUI to show prompt
     return gui_wait_input()        # wait for GUI response
-
-def is_samba_share_mounted(Drive):
-	share_path = Drive.path
-    # Check if the Samba share is accessible by attempting to list its contents
-	try:
-        # Use a simple command to check if the share is accessible
-		result = subprocess.run(['dir', share_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-		Drive.is_mounted =  True
-	except Exception as e:
-		print(f"Error checking Samba share: {e}")
 	
 #	Procura uma external drive por name e devolve 'not' se não encontrar. Devolve a letra da drive se estiver montada
 def find_external_drive(Drive):
@@ -367,7 +357,7 @@ def delete_duplicates(list_of_duplicates):
 #	Fazer cópia incremental caso o projeto exista em ambos os lados
 #	Copiar os que não existem em destination a partir da origin
 #	========================================================================
-def copy_band_projects(origin,destination):
+def copy_band_projects(origin,destination,operation):
 	#	========================================================================================
 	#	Listar projetos na origem
 	# 	Meter os resultado em list_of_local_projects e os duplicados em list_of_duplicates
@@ -410,7 +400,7 @@ def copy_band_projects(origin,destination):
 			path_after_origin = src_path[origin_index + len(origin):]
 			dst_path = destination + "\\" + path_after_origin
 
-			folder_synch(src_path,dst_path," /xo /s")
+			folder_synch(src_path,dst_path,operation)
 		else:
-	 		folder_synch(list_of_local_projects[project],list_of_remote_projects[project]," /xo /s")
+	 		folder_synch(list_of_local_projects[project],list_of_remote_projects[project],operation)
 

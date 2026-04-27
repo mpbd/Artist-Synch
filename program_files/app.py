@@ -1,3 +1,4 @@
+import subprocess
 import tkinter as tk
 import psutil
 import tkinter as tk
@@ -70,8 +71,10 @@ def gui_wait_input():
 
 def list_mounted_drives():
     drives = []
+
     for part in psutil.disk_partitions(all=True):
-        drives.append(part.device)  
+        if part.device:
+            drives.append(part.device)
     return drives
 
 def location_is_mounted(loc):
@@ -443,19 +446,20 @@ def run_sync_worker(safe_origin, safe_destination, safe_structure, selected_oper
 
             print(f"Tagging folder: \"{src}\" with artist \"{artist}\"")
             synchronizer.tag_song_folder(src,artist)
+
     elif selected_operation == "Sync Folders":
-        robocopy_operation = "/xo /s /R:10 /W:10 /TEE"
+        robocopy_operation = "/XO /S /R:10 /W:10 /NP"
         
         print(f"Syncing folders from {safe_origin} to {safe_destination} with structure {safe_structure} and options {selected_operation}")
         for folder in safe_structure:
 
             src = safe_origin + "\\" + folder["name"]
             dst = safe_destination + "\\" + folder["name"]
-            print(folder)
+            #print(folder)
             # Project folder: use copy_band_projects
             if folder["is_project_folder"]:
                 print(f"Project folder detected: {src}")
-                #copy_band_projects(src, dst)              # NO thread here
+                copy_band_projects(src, dst, robocopy_operation)              # NO thread here
             else:
                 print(f"Folder Synch: {src} -> {dst} with {robocopy_operation}")
                 folder_synch(src, dst, robocopy_operation) # NO thread here

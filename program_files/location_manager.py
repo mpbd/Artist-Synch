@@ -4,8 +4,10 @@ import psutil
 
 def list_mounted_drives():
     drives = []
+
     for part in psutil.disk_partitions(all=True):
-        drives.append(part.device)  
+        if part.device:
+            drives.append(part.device)
     return drives
 
 def location_is_mounted(loc):
@@ -72,16 +74,3 @@ def get_drive_info(path):
         "label": label or "unknown",
         "path": drive
     }
-
-drives_root = list_mounted_drives()
-
-mounted_drives = []
-
-for d in drives_root:
-    try:
-        info = get_drive_info(d)   # returns {"uuid","drive_root","label" }
-        mounted_drives.append(info)
-    except Exception as e:
-        print("Could not get drive info for", d, e)
-
-print("Mounted drives:", mounted_drives)

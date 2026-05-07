@@ -23,6 +23,8 @@ from synchronizer import folder_synch, copy_band_projects, tag_song_folder
 
 from settings_manager import load_settings, save_settings
 
+
+
 class ConsoleRedirector:
     def __init__(self, widget):
         self.widget = widget

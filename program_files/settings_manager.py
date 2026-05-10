@@ -1,6 +1,9 @@
 import json
+
 import os
 import tkinter as tk
+
+import location_manager as lm
 import location_manager as lm
 from tkinter.messagebox import askyesno
 from tkinter.simpledialog import askstring
@@ -194,8 +197,7 @@ def open_band_editor(band, is_new):
             settings["bands"].append(band)
 
         save_settings(settings)
-        fill_bands_panel()
-        fill_structure_panel()
+        
         win.destroy()
 
     tk.Button(win, text="Save", command=save_band).pack(pady=15)

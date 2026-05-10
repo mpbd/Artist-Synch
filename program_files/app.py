@@ -339,7 +339,11 @@ def go_operation():
         return p.replace("/", "\\").rstrip("\\")   # no trailing slash
 
     safe_origin = winpath(origin["path"])
-    safe_destination = winpath(destination["path"])
+    print("Selected operation:", selected_operation)
+    if selected_operation != "Tag songs":
+        safe_destination = winpath(destination["path"])
+    else:
+        safe_destination = None
     #safe_structure = [winpath(f["name"]) for f in selected_structure]
     print("Safe paths and operation:", safe_origin, safe_destination, selected_structure, selected_operation)
     # TEMP: you were forcing this operation, so I keep it here
@@ -362,7 +366,7 @@ def run_sync_worker(safe_origin, safe_destination, safe_structure, selected_oper
         
         for folder in safe_structure:
             src = os.path.join(safe_origin, folder["name"])
-            dst = os.path.join(safe_destination, folder["name"])
+            #dst = os.path.join(safe_destination, folder["name"])
             artist = chosen_band["name"]
 
             print(f"Tagging folder: \"{src}\" with artist \"{artist}\"")
@@ -503,6 +507,7 @@ def fill_bands_panel():
 
         # Double click = open band editor immediately
         lbl.bind("<Double-Button-1>", lambda e, b=band, w=lbl: (on_band_click(b, w), open_band_editor(b, False)))
+
 
 
 def format_location(loc):

@@ -21,7 +21,9 @@ from tkinter import simpledialog
 
 from synchronizer import folder_synch, copy_band_projects, tag_song_folder
 
-from settings_manager import load_settings, save_settings
+import settings_manager as sm
+
+import location_manager as lm
 
 
 
@@ -59,7 +61,7 @@ selected_operation = None
 
 selected_structure = []
 
-settings = load_settings()
+settings = sm.load_settings()
 
 user_prompt_queue = queue.Queue()
 user_response_queue = queue.Queue()
@@ -71,92 +73,8 @@ def gui_wait_input():
     return user_response_queue.get()   # blocks worker thread without freezing GUI
 
 
-def list_mounted_drives():
-    drives = []
+mounted_drives = lm.get_mounted_drives_info()
 
-    for part in psutil.disk_partitions(all=True):
-        if part.device:
-            drives.append(part.device)
-    return drives
-
-def location_is_mounted(loc):
-    if not isinstance(loc, dict):
-        return False
-
-    loc_id = loc.get("id")
-    loc_label = loc.get("label")
-    loc_path = loc.get("path")
-
-    if not loc_id or not loc_label or not loc_path:
-        return False
-
-    # Normalize stored path → extract drive root ("D:\\")
-    loc_drive_root = os.path.splitdrive(loc_path)[0] + "\\"
-    
-    for m in mounted_drives:
-        if not isinstance(m, dict):
-            continue
-            
-        m_id = m.get("id")
-        m_label = m.get("label")
-        m_root  = m.get("path")
-
-        # Normalize mounted path too
-        if m_root:
-            m_root = os.path.splitdrive(m_root)[0] + "\\"
-
-        # Strict match of: id, label, and drive root
-        if (
-            m_id == loc_id and
-            m_label == loc_label and
-            m_root == loc_drive_root
-        ):
-            return True
-
-    return False
-
-def get_drive_info(path):
-    # Extract drive root like "D:\\"
-    drive = os.path.splitdrive(path)[0] + "\\"
-
-    # --- Drive Label ---
-    volume_name_buffer = ctypes.create_unicode_buffer(1024)
-    fs_name_buffer = ctypes.create_unicode_buffer(1024)
-    serial_number = ctypes.c_ulong()
-
-    ctypes.windll.kernel32.GetVolumeInformationW(
-        ctypes.c_wchar_p(drive),
-        volume_name_buffer,
-        ctypes.sizeof(volume_name_buffer),
-        ctypes.byref(serial_number),
-        None,
-        None,
-        fs_name_buffer,
-        ctypes.sizeof(fs_name_buffer)
-    )
-
-    label = volume_name_buffer.value
-    uuid_hex = hex(serial_number.value)[2:].upper()
-
-    return {
-        "id": uuid_hex,
-        "label": label or "unknown",
-        "path": drive
-    }
-
-drives_root = list_mounted_drives()
-
-mounted_drives = []
-
-for d in drives_root:
-    try:
-        info = get_drive_info(d)   # returns {"uuid","drive_root","label" }
-        mounted_drives.append(info)
-    except Exception as e:
-        print("Could not get drive info for", d, e)
-
-print("Mounted drives:", mounted_drives)
-#options = settings["options"]
 operations = ["Tag songs", "Sync Folders", "Sync Drives"]
 
 root = tk.Tk()
@@ -248,7 +166,7 @@ def open_band_editor(band, is_new):
     def browse_main_location():
         path = filedialog.askdirectory()
         if path:
-            info = get_drive_info(path)
+            info = lm.get_drive_info(path)
 
             band["main_location"] = {
                 "id": f"{info['id']}",
@@ -277,7 +195,7 @@ def open_band_editor(band, is_new):
     def add_secondary():
         path = filedialog.askdirectory()
         if path:
-            info = get_drive_info(path)
+            info = lm.get_drive_info(path)
 
             new_loc = {
                 "id": f"{info['id']}",
@@ -373,12 +291,13 @@ def open_band_editor(band, is_new):
         if is_new:
             settings["bands"].append(band)
 
-        save_settings(settings)
+        sm.save_settings(settings)
         fill_bands_panel()
         fill_structure_panel()
         win.destroy()
 
     tk.Button(win, text="Save", command=save_band).pack(pady=15)
+
 def make_scrollable(parent):
     canvas = tk.Canvas(parent, borderwidth=0)
     scrollbar = tk.Scrollbar(parent, orient="vertical", command=canvas.yview)
@@ -637,14 +556,14 @@ def fill_origin_panel():
 
     # MAIN LOCATION
     main_loc = chosen_band["main_location"]
-    #print("Mounted drives again:", mounted_drives)
-    #print("Checking main location:", main_loc)
-    if location_is_mounted(main_loc):
+
+    if lm.location_is_mounted(main_loc):
         add_origin_label(main_loc)
     
     # SECONDARY LOCATIONS
     for loc in chosen_band.get("secondary_locations", []):
-        if location_is_mounted(loc):
+        print("Checking secondary location for mounting:", loc)
+        if lm.location_is_mounted(loc):
             add_origin_label(loc)
         
 def select_destination(x):
@@ -690,12 +609,12 @@ def fill_destination_panel():
 
     # MAIN LOCATION
     main_loc = chosen_band["main_location"]
-    if location_is_mounted(main_loc):
+    if lm.location_is_mounted(main_loc):
         add_destination_label(main_loc)
 
     # SECONDARY LOCATIONS
     for loc in chosen_band.get("secondary_locations", []):
-        if location_is_mounted(loc):
+        if lm.location_is_mounted(loc):
             add_destination_label(loc)
 
 def fill_operations_panel():

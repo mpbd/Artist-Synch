@@ -42,7 +42,8 @@ def save_settings(data):
         json.dump(data, f, indent=4)
 
 
-def open_band_editor(band, is_new):
+def open_band_editor(band, is_new,root):
+    print("Opening band editor for:", band)
     win = tk.Toplevel(root)
     win.title("Edit Band" if not is_new else "Create Band")
     win.geometry("400x700")

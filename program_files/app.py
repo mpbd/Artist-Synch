@@ -97,7 +97,7 @@ def add_band():
     }
 
     # Open editor window in "create" mode
-    open_band_editor(new_band, is_new=True)
+    sm.open_band_editor(new_band, is_new=True)
 
 def open_band_selector():
     sel_win = tk.Toplevel(root)
@@ -125,7 +125,7 @@ def open_band_selector():
         for band in settings["bands"]:
             if band["name"] == band_name:
                 sel_win.destroy()
-                open_band_editor(band, is_new=False)
+                sm.open_band_editor(band, is_new=False)
                 return
 
     # --- DOUBLE CLICK HANDLER ---
@@ -339,13 +339,13 @@ def go_operation():
         return p.replace("/", "\\").rstrip("\\")   # no trailing slash
 
     safe_origin = winpath(origin["path"])
-    print("Selected operation:", selected_operation)
+    #print("Selected operation:", selected_operation)
     if selected_operation != "Tag songs":
         safe_destination = winpath(destination["path"])
     else:
         safe_destination = None
     #safe_structure = [winpath(f["name"]) for f in selected_structure]
-    print("Safe paths and operation:", safe_origin, safe_destination, selected_structure, selected_operation)
+    #print("Safe paths and operation:", safe_origin, safe_destination, selected_structure, selected_operation)
     # TEMP: you were forcing this operation, so I keep it here
     
 
@@ -360,7 +360,7 @@ def go_operation():
 
 def run_sync_worker(safe_origin, safe_destination, safe_structure, selected_operation):
 
-    print("Performing operation in background thread with:", safe_origin, safe_destination, safe_structure, selected_operation)
+    #print("Performing operation in background thread with:", safe_origin, safe_destination, safe_structure, selected_operation)
 
     if selected_operation == "Tag songs":
         
@@ -506,7 +506,7 @@ def fill_bands_panel():
         lbl.bind("<Button-1>", lambda e, b=band, w=lbl: on_band_click(b, w))
 
         # Double click = open band editor immediately
-        lbl.bind("<Double-Button-1>", lambda e, b=band, w=lbl: (on_band_click(b, w), open_band_editor(b, False)))
+        lbl.bind("<Double-Button-1>", lambda e, b=band, w=lbl: (on_band_click(b, w), sm.open_band_editor(b, False,root)))
 
 
 
@@ -567,7 +567,7 @@ def fill_origin_panel():
     
     # SECONDARY LOCATIONS
     for loc in chosen_band.get("secondary_locations", []):
-        print("Checking secondary location for mounting:", loc)
+        #print("Checking secondary location for mounting:", loc)
         if lm.location_is_mounted(loc):
             add_origin_label(loc)
         

@@ -46,7 +46,7 @@ def get_drive_info(path):
     }
 
 def location_is_mounted(loc):
-    print("Checking if location is mounted:", loc)
+    #print("Checking if location is mounted:", loc)
     if not isinstance(loc, dict):
         return False
 

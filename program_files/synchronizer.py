@@ -141,33 +141,35 @@ def incremental_backup(hostname, port, username, password, local_source_dir, rem
             ssh.close()
 
 #######################################
-#def folder_synch(origin,destination,operation):
-	# command = "robocopy \"" + origin + " \" \""+ destination + " \" " + operation + " /r:3 /w:3"
-	# os.system(command)
-def folder_synch(origin, destination, operation):
+def folder_synch(origin, destination, operation, wait_for_completion):
+    # 1. Build the command as a single string. 
+    # We wrap origin and destination in quotes just in case the folder paths have spaces.
+    full_command = f'robocopy "{origin}" "{destination}" {operation}'
+    
+    # 2. Wrap it in cmd.exe so it runs the command, and then runs 'pause'
+    cmd_with_pause = f'cmd.exe /c "{full_command} & pause"'
+    cmd_without_pause = f'cmd.exe /c "{full_command}"'
 
-    op_list = [opt for opt in operation.split(" ") if opt.strip()]
+    print("Running in new window:", cmd_with_pause)
 
-    command = ["robocopy", origin, destination] + op_list
+    if wait_for_completion:
+        # 3. Launch the process with the magic flag.
+        # Notice we completely removed stdout, stderr, text, and bufsize.
+        process = subprocess.Popen(
+            cmd_with_pause,
+            creationflags=subprocess.CREATE_NEW_CONSOLE
+        )
+    else:
+        process = subprocess.Popen(
+            cmd_without_pause,
+            creationflags=subprocess.CREATE_NEW_CONSOLE
+        )
 
-    print("Running:", command)
-
-    process = subprocess.Popen(
-        command,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        text=True,
-        bufsize=0,
-        shell=False
-    )
-
-    while True:
-        line = process.stdout.readline()
-        if not line:
-            break
-        print(line, end="")  # goes straight to your Tk console
-
+    # 4. Keep this! This makes your background thread wait until the user
+    # actually closes the pop-up terminal window before finishing the task.
     process.wait()
+
+
 ########################################
 def apply_tag(music_object, tag,value,filename):
 	print("\n\t##### Aplicar \"" + tag + ":" + value + "\" a \"" + filename + "\" #####")
@@ -400,7 +402,7 @@ def copy_band_projects(origin,destination,operation):
 			path_after_origin = src_path[origin_index + len(origin):]
 			dst_path = destination + "\\" + path_after_origin
 
-			folder_synch(src_path,dst_path,operation)
+			folder_synch(src_path,dst_path,operation,False)
 		else:
-	 		folder_synch(list_of_local_projects[project],list_of_remote_projects[project],operation)
+	 		folder_synch(list_of_local_projects[project],list_of_remote_projects[project],operation,False)
 

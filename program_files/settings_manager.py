@@ -192,7 +192,7 @@ def open_band_editor(band, is_new,root):
             }
             for f in folder_widgets
         ]
-        #band["secondary_locations"] = list(sec_listbox.get(0, tk.END))
+        band["secondary_locations"] = list(sec_listbox.get(0, tk.END))
 
         if is_new:
             settings["bands"].append(band)

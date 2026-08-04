@@ -1,18 +1,19 @@
 # Artist-Synch
-Artist-Synch is a Python and Tkinter-based desktop utility designed for musicians and producers to manage repositories of bands/artists, organize project structures, and handle smart backups and synchronization without creating duplicate files.
+Artist-Synch is a lightweight Python and Tkinter desktop application designed to streamline project management and backups across multiple bands and artists. It leverages RoboCopy under the hood to perform efficient, zero-duplicate synchronization between local drives, external disks, and network shares.
 
-Features
+## Key Features
 
-    Band & Artist Management: Easily select, add, and organize workspaces for multiple bands or musical projects, supporting multiple primary and secondary storage locations (local disks and network drives).
+Multi-Band Workspaces — Easily switch between different artist repositories and manage their storage locations in one central dashboard.
     
-    Fully Modular & Custom Folder Structure: Define and edit custom folder structures per band with flexible options to toggle project attributes per folder.
+Fully Modular Folder Structures — Tailor your directory layouts per band (e.g., Projetos, Audio, Visual, Documentos) with customizable project attribute toggles.
     
-    Smart Synchronization & Deduplication: Powered by RoboCopy under the hood to ensure efficient file transfers and backups across locations without duplicating existing assets.
-    Operations:
-        Tag songs
-        Sync Folders
-        Sync Drives
+Smart Deduplication & Syncing — Powered by RoboCopy for robust, fast, and safe file transfers without redundant copies.
+    
+Core Operations:
+    Tag Songs — Organize and tag your audio stems and track assets.
+    Sync Folders — Keep specific project directories aligned across storage paths.
+    Sync Drives — Perform full backup sweeps across drives and network nodes (e.g., bd-music-1).
 
-Configuration
+## Configuration
 
-    Settings, locations, and custom folder layouts are managed via JSON configuration under the data/settings.json file, handled seamlessly through the built-in Config tab and settings manager.
+All configurations, paths, and custom folder layouts are stored locally under data/settings.json, and can be managed seamlessly through the built-in Config interface inside the app.

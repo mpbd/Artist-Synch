@@ -5,14 +5,14 @@ Artist-Synch is a lightweight Python and Tkinter desktop application designed to
 
 **Multi-Band Workspaces**: Easily switch between different artist repositories and manage their storage locations in one central dashboard.
     
-**Fully Modular Folder Structures**: Tailor your directory layouts per band (e.g., Projetos, Audio, Visual, Documentos) with customizable project attribute toggles.
+**Fully Modular Folder Structures**: Tailor your directory layouts per band with customizable project attribute toggles.
     
 **Smart Deduplication & Syncing**: Powered by RoboCopy for robust, fast, and safe file transfers without redundant copies.
     
 **Core Operations**:
     Tag Songs — Organize and tag your audio stems and track assets.
     Sync Folders — Keep specific project directories aligned across storage paths.
-    Sync Drives — Perform full backup sweeps across drives and network nodes (e.g., bd-music-1).
+    Sync Drives — Perform full backup sweeps across drives and network nodes.
 
 ## Configuration
 

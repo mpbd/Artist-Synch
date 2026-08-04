@@ -38,12 +38,13 @@ def load_settings():
 settings = load_settings()
 
 def save_settings(data):
+    print("Saving settings:" + str(data) + " to " + SETTINGS_FILE)
     with open(SETTINGS_FILE, "w") as f:
         json.dump(data, f, indent=4)
 
 
 def open_band_editor(band, is_new,root):
-    print("Opening band editor for:", band)
+    #print("Opening band editor for:", band)
     win = tk.Toplevel(root)
     win.title("Edit Band" if not is_new else "Create Band")
     win.geometry("400x700")
@@ -96,7 +97,7 @@ def open_band_editor(band, is_new,root):
 
     for loc in band["secondary_locations"]:
         #print(loc)
-        sec_listbox.insert(tk.END, f"{loc['label']}  ({loc['path']})")
+        sec_listbox.insert(tk.END, f"{loc['label']} -> ({loc['path']})")
 
     def add_secondary():
         path = filedialog.askdirectory()
@@ -108,17 +109,19 @@ def open_band_editor(band, is_new,root):
                 "label": info["label"] or "unknown",
                 "path": path
             }
-            print(new_loc)
+            #print(new_loc)
 
             band["secondary_locations"].append(new_loc)
 
             # Show pretty label instead of full JSON
-            sec_listbox.insert(tk.END, f"{new_loc['label']}  ({new_loc['path']})")
+            sec_listbox.insert(tk.END, f"{new_loc['label']} -> ({new_loc['path']})")
 
     def remove_secondary():
         sel = sec_listbox.curselection()
         if sel:
-            sec_listbox.delete(sel)
+            index = sel[0] # Get the selected index
+            sec_listbox.delete(index) # Remove from UI
+            band["secondary_locations"].pop(index) # Remove from actual data
 
     tk.Button(win, text="Add Secondary Location", command=add_secondary).pack(pady=2)
     tk.Button(win, text="Remove Selected", command=remove_secondary).pack(pady=2)
@@ -180,10 +183,8 @@ def open_band_editor(band, is_new,root):
     def save_band():
         band["name"] = name_var.get().strip()
 
-
         if isinstance(band.get("main_location"), dict):
             band["main_location"]["path"] = main_loc_path_var.get()
-
 
         band["structure"] = [
             {
@@ -192,13 +193,13 @@ def open_band_editor(band, is_new,root):
             }
             for f in folder_widgets
         ]
-        band["secondary_locations"] = list(sec_listbox.get(0, tk.END))
 
         if is_new:
             settings["bands"].append(band)
 
-        save_settings(settings)
-        
+        #save_settings(settings)
+        with open(SETTINGS_FILE, "w") as f:
+            json.dump(settings, f, indent=4)
         win.destroy()
 
     tk.Button(win, text="Save", command=save_band).pack(pady=15)

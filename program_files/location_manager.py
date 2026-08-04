@@ -2,7 +2,6 @@ import os
 import ctypes
 import psutil
 
-
 def list_mounted_drives():
     drives = []
 

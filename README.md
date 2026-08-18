@@ -10,9 +10,10 @@ Artist-Synch is a lightweight Python and Tkinter desktop application designed to
 **Smart Deduplication & Syncing**: Powered by RoboCopy for robust, fast, and safe file transfers without redundant copies.
     
 **Core Operations**:
-    Tag Songs — Organize and tag your audio stems and track assets.
-    Sync Folders — Keep specific project directories aligned across storage paths.
-    Sync Drives — Perform full backup sweeps across drives and network nodes.
+
+* **Tag Songs**: Organize and tag your audio stems and track assets.
+* **Sync Folders**: Keep specific project directories aligned across storage paths.
+* **Sync Drives**: Perform full backup sweeps across drives and network nodes.
 
 ## Configuration
 

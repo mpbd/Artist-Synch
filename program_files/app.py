@@ -350,7 +350,6 @@ def fill_bands_panel():
         lbl.bind("<Double-Button-1>", lambda e, b=band, w=lbl: (on_band_click(b, w), sm.open_band_editor(b, False,root)))
 
 
-
 def format_location(loc):
     if not isinstance(loc, dict):
         return str(loc)

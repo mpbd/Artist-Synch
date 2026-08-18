@@ -16,4 +16,4 @@ Artist-Synch is a lightweight Python and Tkinter desktop application designed to
 
 ## Configuration
 
-All configurations, paths, and custom folder layouts are stored locally under data/settings.json, and can be managed seamlessly through the built-in Config interface inside the app.
+All configurations, paths, and custom folder layouts are stored locally under data/settings.json, and can be managed and costumized.

@@ -185,6 +185,15 @@ def open_band_editor(band, is_new,root):
 
         if isinstance(band.get("main_location"), dict):
             band["main_location"]["path"] = main_loc_path_var.get()
+        else:
+            # If main_location was entered manually as a string (or empty),
+            # construct a proper dict structure or keep/wrap it consistently
+            path_val = main_loc_path_var.get().strip()
+            band["main_location"] = {
+                "id": "manual",
+                "label": os.path.basename(path_val) or "unknown",
+                "path": path_val
+            }
 
         band["structure"] = [
             {
@@ -197,9 +206,7 @@ def open_band_editor(band, is_new,root):
         if is_new:
             settings["bands"].append(band)
 
-        #save_settings(settings)
-        with open(SETTINGS_FILE, "w") as f:
-            json.dump(settings, f, indent=4)
+        save_settings(settings)
         win.destroy()
 
     tk.Button(win, text="Save", command=save_band).pack(pady=15)

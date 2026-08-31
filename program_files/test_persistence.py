@@ -8,8 +8,9 @@ sys.modules["tkinter.simpledialog"] = MagicMock()
 sys.modules["tkinter.ttk"] = MagicMock()
 sys.modules["tkinter.filedialog"] = MagicMock()
 
-# Add the program_files directory to sys.path
-program_files_dir = "/opt/data/git_projects/Artist-Synch/.worktrees/t_e9122e38/program_files"
+# Add the program_files directory to sys.path (this file lives inside it)
+import os
+program_files_dir = os.path.dirname(os.path.abspath(__file__))
 if program_files_dir not in sys.path:
     sys.path.append(program_files_dir)
 
@@ -37,12 +38,11 @@ print(f"Save new band success: {success}")
 # Verify it exists in memory and on disk
 bands = sm.get_all_bands()
 print(f"Bands after save: {len(bands)}")
-if len(bands) > 0 and bands[0]["name"] == "Verification Band":
+if any(b.get("name") == "Verification Band" for b in bands):
     print("Verification successful: Verification Band found in memory.")
 
-# Check file on disk
-actual_path = "/opt/data/git_projects/Artist-Synch/.worktrees/t_e9122e38/data/settings.json"
-import os
+# Check file on disk (resolved relative to this file's location)
+actual_path = os.path.normpath(os.path.join(program_files_dir, "..", "data", "settings.json"))
 if os.path.exists(actual_path):
     with open(actual_path, "r") as f:
         content = f.read()
@@ -54,7 +54,9 @@ else:
 test_band["stats"]["v"] = 2
 success_update = sm.save_band(test_band, is_new=False)
 print(f"Update band success: {success_update}")
-print(f"Updated count in memory: {sm.get_all_bands()[0]['stats']['v']}")
+updated = next((b for b in sm.get_all_bands() if b.get("name") == "Verification Band"), None)
+if updated:
+    print(f"Updated count in memory: {updated['stats']['v']}")
 
 # Test stats update function
 sm.update_stats("last_used", "2026-08-24")

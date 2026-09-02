@@ -206,3 +206,5 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+root_cause_note.md
+root_cause_note.md

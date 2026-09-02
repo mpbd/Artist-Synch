@@ -267,7 +267,7 @@ def open_band_editor(band, is_new, root=None):
     tk.Button(win, text="Remove Folder", command=remove_folder).pack(pady=2)
 
     # --- SAVE BUTTON ---
-    def save_band():
+    def save_band(*args):
         band["name"] = name_var.get().strip()
         if isinstance(band.get("main_location"), dict):
             band["main_location"]["path"] = main_loc_path_var.get()

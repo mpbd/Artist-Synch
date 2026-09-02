@@ -152,6 +152,8 @@ def open_band_editor(band, is_new, root=None):
         raise RuntimeError("open_band_editor requires a Tk root window.")
 
     win = tk.Toplevel(root)
+    win.transient(root)
+    win.grab_set()
     win.title("Edit Band" if not is_new else "Create Band")
     win.geometry("400x700")
 

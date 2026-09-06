@@ -12,7 +12,7 @@ Artist-Synch is a lightweight Python and Tkinter desktop application designed to
 **Core Operations**:
 
 * **Tag Songs**: Organize and tag your audio stems and track assets.
-* **Sync Folders**: Keep specific project directories aligned across storage paths.
+* **Sync Folders**: Keep specific project directories aligned across storage paths. Optionally set a **Max Age** (in days) next to the operation — files older than that are skipped via RoboCopy's `/MAXAGE` flag. Leave it empty to copy everything.
 * **Sync Drives**: Perform full backup sweeps across drives and network nodes.
 
 ## Configuration

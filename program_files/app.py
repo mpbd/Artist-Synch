@@ -1,3 +1,4 @@
+import re
 import subprocess
 import tkinter as tk
 import psutil
@@ -10,7 +11,7 @@ import os
 import ctypes
 import uuid
 
-from tkinter.messagebox import askyesno
+from tkinter.messagebox import askyesno, messagebox
 from tkinter.simpledialog import askstring
 from tkinter.simpledialog import Dialog
 from tkinter import scrolledtext
@@ -79,6 +80,8 @@ operations = ["Tag songs", "Sync Folders", "Sync Drives"]
 
 root = tk.Tk()
 root.title("Syncher")
+
+max_age_var = tk.StringVar()   # optional max age (days) for the Sync Folders operation
 root.geometry("1080x400") 
 
 def add_band():
@@ -157,6 +160,35 @@ def make_scrollable(parent):
 
     return scroll_frame
 
+def parse_max_age(text):
+    """Validates the optional Max Age (days) input for Sync Folders.
+
+    Returns (value, None) on success — value is None when the input is empty,
+    which means 'do not pass /MAXAGE to robocopy'.
+    Returns (None, error_message) when the input is invalid.
+    """
+    text = str(text or "").strip()
+    if text == "":
+        return None, None
+    if not re.fullmatch(r"[0-9]+", text):
+        return None, "Max Age must be a whole number of days (or left empty for no limit)."
+    value = int(text)
+    if value <= 0:
+        return None, "Max Age must be a positive number of days (or left empty for no limit)."
+    return value, None
+
+
+def build_robocopy_operation(max_age=None):
+    """Builds the robocopy flags for the Sync Folders operation.
+
+    /MAXAGE:<n> is only appended when a positive max age (days) was chosen.
+    """
+    flags = "/XO /S /R:10 /W:10 /NP"
+    if max_age is not None:
+        flags += f" /MAXAGE:{max_age}"
+    return flags
+
+
 def go_operation():
     global origin, destination, selected_operation, selected_structure
 
@@ -190,16 +222,25 @@ def go_operation():
     # TEMP: you were forcing this operation, so I keep it here
     
 
+    # --- MAX AGE OPTION (Sync Folders only) ---
+    # Empty input = no /MAXAGE flag. Invalid input aborts the operation.
+    max_age = None
+    if selected_operation == "Sync Folders":
+        max_age, max_age_error = parse_max_age(max_age_var.get())
+        if max_age_error is not None:
+            messagebox.showwarning("Max Age", max_age_error)
+            return
+
     # --- RUN EVERYTHING IN A BACKGROUND THREAD ---
     threading.Thread(
         target=run_sync_worker,
-        args=(safe_origin, safe_destination, selected_structure, selected_operation),
+        args=(safe_origin, safe_destination, selected_structure, selected_operation, max_age),
         daemon=True
     ).start()
 
 
 
-def run_sync_worker(safe_origin, safe_destination, safe_structure, selected_operation):
+def run_sync_worker(safe_origin, safe_destination, safe_structure, selected_operation, max_age=None):
 
     #print("Performing operation in background thread with:", safe_origin, safe_destination, safe_structure, selected_operation)
 
@@ -214,7 +255,11 @@ def run_sync_worker(safe_origin, safe_destination, safe_structure, selected_oper
             synchronizer.tag_song_folder(src,artist)
 
     elif selected_operation == "Sync Folders":
-        robocopy_operation = "/XO /S /R:10 /W:10 /NP"
+        robocopy_operation = build_robocopy_operation(max_age)
+        if max_age is not None:
+            print(f"Sync Folders: max age {max_age} days (robocopy /MAXAGE:{max_age})")
+        else:
+            print("Sync Folders: no max age limit (robocopy /MAXAGE not used)")
         
         #print(f"Syncing folders from {safe_origin} to {safe_destination} with structure {safe_structure} and options {selected_operation}")
         for folder in safe_structure:
@@ -506,6 +551,15 @@ def fill_operations_panel():
 
         # proper click binding
         lbl.bind("<Button-1>", lambda e, o=op: on_operation_click(o))
+
+    # ---- Sync Folders options row (only shown for that operation) ----
+    if selected_operation == "Sync Folders":
+        options_row = tk.Frame(D_panel)
+        options_row.pack(fill="x", pady=(6, 0))
+
+        tk.Label(options_row, text="Max Age (days):", anchor="w", padx=10).pack(side="left")
+        tk.Entry(options_row, textvariable=max_age_var, width=8).pack(side="left", padx=(2, 8), ipady=2)
+        tk.Label(options_row, text="(empty = no limit)", fg="gray").pack(side="left")
 
 def on_operation_hover_enter(label, op):
     global selected_operation

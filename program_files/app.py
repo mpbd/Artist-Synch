@@ -10,8 +10,9 @@ import synchronizer
 import os
 import ctypes
 import uuid
+import tkinter.messagebox
 
-from tkinter.messagebox import askyesno, messagebox
+#from tkinter.messagebox import askyesno, messagebox
 from tkinter.simpledialog import askstring
 from tkinter.simpledialog import Dialog
 from tkinter import scrolledtext

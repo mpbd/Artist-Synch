@@ -150,7 +150,7 @@ def folder_synch(origin, destination, operation, wait_for_completion):
     cmd_with_pause = f'cmd.exe /c "{full_command} & pause"'
     cmd_without_pause = f'cmd.exe /c "{full_command}"'
 
-    print("Running in new window:", cmd_with_pause)
+    print("\nRunning in new window:", cmd_with_pause)
 
     if wait_for_completion:
         # 3. Launch the process with the magic flag.
@@ -162,7 +162,7 @@ def folder_synch(origin, destination, operation, wait_for_completion):
     else:
         process = subprocess.Popen(
             cmd_without_pause,
-            creationflags=subprocess.CREATE_NEW_CONSOLE
+            creationflags=subprocess.CREATE_NO_WINDOW
         )
 
     # 4. Keep this! This makes your background thread wait until the user

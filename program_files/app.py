@@ -267,7 +267,7 @@ def run_sync_worker(safe_origin, safe_destination, safe_structure, selected_oper
 
             src = safe_origin + "\\" + folder["name"]
             dst = safe_destination + "\\" + folder["name"]
-            #print(folder)
+  
             # Project folder: use copy_band_projects
             if folder["is_project_folder"]:
                 print(f"Project folder detected: {src}")
